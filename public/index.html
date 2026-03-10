@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL-Shortener</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🔗 URL-Shortener</h1>
+    <p class="subtitle">Lange URLs ganz einfach kürzen</p>
+
+    <div class="input-group">
+      <input type="text" id="urlInput" placeholder="https://example.com/sehr/lange/url..." />
+      <button id="shortenBtn">Kürzen</button>
+    </div>
+
+    <p id="errorMsg" class="error hidden"></p>
+
+    <div id="result" class="result hidden">
+      <p>Dein Kurzlink:</p>
+      <div class="result-row">
+        <a id="shortLink" href="#" target="_blank"></a>
+        <button id="copyBtn">📋 Kopieren</button>
+      </div>
+      <p id="copyMsg" class="copy-msg hidden">✅ Kopiert!</p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
