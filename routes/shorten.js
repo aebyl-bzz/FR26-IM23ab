@@ -1,7 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const { nanoid } = require('nanoid');
-const { getDb, saveDb } = require('../db/database');
+const { findByOriginalUrl, findByShortCode, createUrl } = require('../db/urlRepository');
+
+async function generateUniqueCode() {
+  const maxAttempts = 10;
+
+  for (let i = 0; i < maxAttempts; i += 1) {
+    const code = nanoid(6);
+    const existingUrl = await findByShortCode(code);
+
+    if (!existingUrl) {
+      return code;
+    }
+  }
+
+  throw new Error('Konnte keinen eindeutigen Kurzcode erzeugen.');
+}
 
 router.post('/', async (req, res) => {
   const { url } = req.body;
@@ -16,19 +31,19 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Ungültige URL. Bitte eine vollständige URL eingeben (z.B. https://example.com).' });
   }
 
-  const db = await getDb();
+  try {
+    const existingCode = await findByOriginalUrl(url);
+    if (existingCode) {
+      return res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${existingCode}`, code: existingCode });
+    }
 
-  const existing = db.exec('SELECT short_code FROM urls WHERE original_url = ?', [url]);
-  if (existing.length > 0 && existing[0].values.length > 0) {
-    const code = existing[0].values[0][0];
-    return res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${code}` });
+    const shortCode = await generateUniqueCode();
+    await createUrl(url, shortCode);
+
+    return res.status(201).json({ shortUrl: `${req.protocol}://${req.get('host')}/${shortCode}`, code: shortCode });
+  } catch (error) {
+    return res.status(500).json({ error: 'Interner Fehler beim Erzeugen des Kurzlinks.' });
   }
-
-  const shortCode = nanoid(6);
-  db.run('INSERT INTO urls (original_url, short_code) VALUES (?, ?)', [url, shortCode]);
-  saveDb();
-
-  res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${shortCode}` });
 });
 
 module.exports = router;
