@@ -1,0 +1,1 @@
+window.URL_SHORTENER_API_BASE = '';
