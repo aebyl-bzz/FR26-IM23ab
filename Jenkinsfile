@@ -2,20 +2,34 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_NAME = "fr26-im23ab"
-        BASE_URL = "http://54.80.83.95"
-        DB_USER = "appuser"
-        DB_PASSWORD = "apppassword"
-        DB_NAME = "appdb"
-        DB_PORT = "5432"
-        BACKEND_PORT = "5000"
+        PROJECT_NAME       = "fr26-im23ab"
+        TARGET_BRANCH      = "main"
+        REPO_URL           = "https://github.com/aebyl-bzz/FR26-IM23ab.git"
+        GIT_CREDENTIALS_ID = "github-pat"
+        BASE_URL           = "http://54.80.83.95"
+        DB_USER            = "appuser"
+        DB_PASSWORD        = "apppassword"
+        DB_NAME            = "appdb"
+        DB_PORT            = "5432"
+        BACKEND_PORT       = "5000"
+        SONAR_SCANNER_OPTS = "-Xmx512m"
+        NODE_OPTIONS       = "--max-old-space-size=384"
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "*/${env.TARGET_BRANCH}"]],
+                    userRemoteConfigs: [[url: env.REPO_URL, credentialsId: env.GIT_CREDENTIALS_ID]]
+                ])
+            }
+        }
+
         stage('Prepare Names') {
             steps {
                 script {
-                    env.SAFE_BRANCH = (env.BRANCH_NAME ?: 'main').toLowerCase().replaceAll('[^a-z0-9_.-]', '-')
+                    env.SAFE_BRANCH = env.TARGET_BRANCH.toLowerCase().replaceAll('[^a-z0-9_.-]', '-')
                     env.BACKEND_CONTAINER = "${env.PROJECT_NAME}_${env.SAFE_BRANCH}_backend"
                     env.DB_CONTAINER = "${env.PROJECT_NAME}_${env.SAFE_BRANCH}_db"
                     env.DB_VOLUME = "${env.PROJECT_NAME}_${env.SAFE_BRANCH}_db_data"
