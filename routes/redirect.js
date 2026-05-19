@@ -1,18 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../db/database');
+const { findByShortCode } = require('../db/urlRepository');
 
 router.get('/:code', async (req, res) => {
   const { code } = req.params;
-  const db = await getDb();
+  try {
+    const originalUrl = await findByShortCode(code);
 
-  const result = db.exec('SELECT original_url FROM urls WHERE short_code = ?', [code]);
+    if (!originalUrl) {
+      return res.status(404).send('Kurzlink nicht gefunden.');
+    }
 
-  if (!result.length || !result[0].values.length) {
-    return res.status(404).send('Kurzlink nicht gefunden.');
+    return res.redirect(originalUrl);
+  } catch {
+    return res.status(500).send('Interner Fehler.');
   }
-
-  res.redirect(result[0].values[0][0]);
 });
 
 module.exports = router;

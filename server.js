@@ -5,7 +5,7 @@ const redirectRouter = require('./routes/redirect');
 const { initDatabase } = require('./db/database');
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 5000;
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || '')
   .split(',')
   .map((origin) => origin.trim())

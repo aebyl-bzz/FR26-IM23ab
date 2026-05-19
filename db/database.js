@@ -1,55 +1,35 @@
-const initSqlJs = require('sql.js');
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'urls.db');
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://appuser:apppassword@localhost:5432/appdb';
 
-let db;
-let isInitialized = false;
+let pool;
 
-function ensureSchema(database) {
-  database.run(`
-    CREATE TABLE IF NOT EXISTS urls (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      original_url TEXT NOT NULL,
-      short_code TEXT NOT NULL UNIQUE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  database.run('CREATE INDEX IF NOT EXISTS idx_urls_short_code ON urls(short_code)');
-  database.run('CREATE INDEX IF NOT EXISTS idx_urls_original_url ON urls(original_url)');
-}
-
-async function getDb() {
-  if (db) return db;
-
-  const SQL = await initSqlJs();
-
-  if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(fileBuffer);
-  } else {
-    db = new SQL.Database();
+function getDb() {
+  if (pool) {
+    return pool;
   }
 
-  if (!isInitialized) {
-    ensureSchema(db);
-    isInitialized = true;
-    saveDb();
-  }
+  pool = new Pool({
+    connectionString: DATABASE_URL,
+  });
 
-  return db;
+  return pool;
 }
 
 async function initDatabase() {
-  await getDb();
+  const db = getDb();
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS urls (
+      id SERIAL PRIMARY KEY,
+      original_url TEXT NOT NULL,
+      short_code TEXT NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.query('CREATE INDEX IF NOT EXISTS idx_urls_short_code ON urls(short_code)');
+  await db.query('CREATE INDEX IF NOT EXISTS idx_urls_original_url ON urls(original_url)');
 }
 
-function saveDb() {
-  if (!db) return;
-  const data = db.export();
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
-}
-
-module.exports = { getDb, saveDb, initDatabase };
+module.exports = { getDb, initDatabase };

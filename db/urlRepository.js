@@ -1,31 +1,30 @@
-const { getDb, saveDb } = require('./database');
+const { getDb } = require('./database');
 
 async function findByOriginalUrl(originalUrl) {
   const db = await getDb();
-  const result = db.exec('SELECT short_code FROM urls WHERE original_url = ?', [originalUrl]);
+  const result = await db.query('SELECT short_code FROM urls WHERE original_url = $1 LIMIT 1', [originalUrl]);
 
-  if (!result.length || !result[0].values.length) {
+  if (!result.rows.length) {
     return null;
   }
 
-  return result[0].values[0][0];
+  return result.rows[0].short_code;
 }
 
 async function findByShortCode(shortCode) {
   const db = await getDb();
-  const result = db.exec('SELECT original_url FROM urls WHERE short_code = ?', [shortCode]);
+  const result = await db.query('SELECT original_url FROM urls WHERE short_code = $1 LIMIT 1', [shortCode]);
 
-  if (!result.length || !result[0].values.length) {
+  if (!result.rows.length) {
     return null;
   }
 
-  return result[0].values[0][0];
+  return result.rows[0].original_url;
 }
 
 async function createUrl(originalUrl, shortCode) {
   const db = await getDb();
-  db.run('INSERT INTO urls (original_url, short_code) VALUES (?, ?)', [originalUrl, shortCode]);
-  saveDb();
+  await db.query('INSERT INTO urls (original_url, short_code) VALUES ($1, $2)', [originalUrl, shortCode]);
 }
 
 module.exports = {

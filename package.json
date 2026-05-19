@@ -7,8 +7,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "sql.js": "^1.10.3",
     "express": "^4.18.2",
-    "nanoid": "^3.3.7"
+    "nanoid": "^3.3.7",
+    "pg": "^8.13.1"
   }
 }
