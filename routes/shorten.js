@@ -3,6 +3,10 @@ const router = express.Router();
 const { nanoid } = require('nanoid');
 const { findByOriginalUrl, findByShortCode, createUrl } = require('../db/urlRepository');
 
+function getPublicBaseUrl(req) {
+  return (process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+}
+
 async function generateUniqueCode() {
   const maxAttempts = 10;
 
@@ -33,14 +37,16 @@ router.post('/', async (req, res) => {
 
   try {
     const existingCode = await findByOriginalUrl(url);
+    const publicBaseUrl = getPublicBaseUrl(req);
+
     if (existingCode) {
-      return res.json({ shortUrl: `${req.protocol}://${req.get('host')}/${existingCode}`, code: existingCode });
+      return res.json({ shortUrl: `${publicBaseUrl}/${existingCode}`, code: existingCode });
     }
 
     const shortCode = await generateUniqueCode();
     await createUrl(url, shortCode);
 
-    return res.status(201).json({ shortUrl: `${req.protocol}://${req.get('host')}/${shortCode}`, code: shortCode });
+    return res.status(201).json({ shortUrl: `${publicBaseUrl}/${shortCode}`, code: shortCode });
   } catch (error) {
     return res.status(500).json({ error: 'Interner Fehler beim Erzeugen des Kurzlinks.' });
   }
